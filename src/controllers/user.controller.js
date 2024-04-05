@@ -4,6 +4,7 @@ import { User } from "../models/user.model.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import jwt from "jsonwebtoken"
+import mongoose from "mongoose"
 
 const generateAccessAndRefereshTokens = async (userId) => {
     try {
@@ -155,8 +156,8 @@ const logoutUser = asyncHandler(async (req, res) => {
     await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set: {
-                refreshToken: undefined
+            $unset: {
+                refreshToken: 1 //this removes the field from document
             }
         },
         {
@@ -177,7 +178,7 @@ const logoutUser = asyncHandler(async (req, res) => {
 })
 
 const refreshAccessToken = asyncHandler(async(req, res) => {
-    const incomingRefreshToken = req.cookie.refreshToken || req.body.refreshToken
+    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
 
     if(!incomingRefreshToken) {
         throw new ApiError(401, "unauthorized request")
@@ -434,15 +435,15 @@ const getWatchHistory = asyncHandler(async(req, res) => {
                                         username:1,
                                         avatar: 1
                                     }
-                                }, 
-                                {
-                                    $addFields: {
-                                        owner: {
-                                            $first: "$owner"
-                                        }
-                                    }
                                 }
                             ]
+                        }
+                    }, 
+                    {
+                        $addFields: {
+                            owner: {
+                                $first: "$owner"
+                            }
                         }
                     }
                 ]
